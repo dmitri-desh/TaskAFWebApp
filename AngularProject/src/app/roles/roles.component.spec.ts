@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { HealthCheckComponent } from './health-check.component';
+import { RolesComponent } from './roles.component';
 
-describe('HealthCheckComponent', () => {
-  let component: HealthCheckComponent;
-  let fixture: ComponentFixture<HealthCheckComponent>;
+describe('RolesComponent', () => {
+  let component: RolesComponent;
+  let fixture: ComponentFixture<RolesComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [HealthCheckComponent]
+      declarations: [RolesComponent]
     });
-    fixture = TestBed.createComponent(HealthCheckComponent);
+    fixture = TestBed.createComponent(RolesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

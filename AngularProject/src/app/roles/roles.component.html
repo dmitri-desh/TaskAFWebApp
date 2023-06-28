@@ -1,0 +1,40 @@
+<h1>Roles</h1>
+
+<p>Here's a list of roles: feel free to play with it.</p>
+
+<p *ngIf="!roles"><em>Loading...</em></p>
+
+<mat-form-field [hidden]="!roles">
+    <input matInput #filter (keyup)="loadData(filter.value)"
+    placeholder="Filter by name (or part of it)...">
+</mat-form-field>
+
+<table mat-table [dataSource]="roles"
+    class="mat-elevation-z8"
+    [hidden]="!roles"
+    matSort (matSortChange)="loadData()"
+    [matSortActive]="defaultSortColumn"
+    [matSortDirection]="defaultSortOrder"
+>
+<!-- Id Column -->
+    <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+        <td mat-cell *matCellDef="let role">{{role.id}}</td>
+    </ng-container>
+    <!-- Name Column -->
+    <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let role">{{role.name}}</td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>
+
+<!-- Pagination directive -->
+<mat-paginator 
+    [hidden]="!roles"
+    (page)="getData($event)"
+    [pageSize]="10"
+    [pageSizeOptions]="[10, 20, 50]"
+    showFirstLastButtons>
+</mat-paginator>

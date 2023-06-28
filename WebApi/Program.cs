@@ -1,4 +1,3 @@
-global using WebApi;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
 
@@ -11,12 +10,9 @@ namespace WebApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-            builder.Services.AddHealthChecks()
-                .AddCheck("ICMP_01", new ICMPHealthCheck("www.ryadel.com", 100))
-                .AddCheck("ICMP_02", new ICMPHealthCheck("www.google.com", 100))
-                .AddCheck("ICMP_03", new ICMPHealthCheck($"www.{Guid.NewGuid():N}.com", 100));
-
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(options =>
+                options.JsonSerializerOptions.WriteIndented = true
+            );
 
             builder.Services.AddCors(options =>
             {
@@ -37,6 +33,8 @@ namespace WebApi
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+            CreateDbIfNotExists(builder);
+
             var app = builder.Build();
 
             app.UseCors("AllowAngularOrigins");
@@ -52,11 +50,27 @@ namespace WebApi
 
             app.UseAuthorization();
 
-            app.UseHealthChecks(new PathString("/api/health"), new CustomHealthCheckOptions());
-
             app.MapControllers();
 
             app.Run();
+        }
+
+        private static void CreateDbIfNotExists(WebApplicationBuilder builder)
+        {
+            using var scope = builder.Services.BuildServiceProvider().CreateScope();
+
+            var services = scope.ServiceProvider;
+
+            try
+            {
+                var context = services.GetRequiredService<ApplicationDbContext>();
+                DbInitializer.Initialize(context);
+            }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "An error occurred creating the DB.");
+            }
         }
     }
 }
