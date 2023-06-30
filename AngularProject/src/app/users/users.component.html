@@ -1,0 +1,49 @@
+<h1>Users</h1>
+
+<p>Here's a list of users: feel free to play with it.</p>
+
+<p *ngIf="!users"><em>Loading...</em></p>
+
+<button mat-flat-button color="primary"
+    class="btn-add" *ngIf="users" [routerLink]="['/user']">
+        Add a new User
+</button>
+
+<mat-form-field [hidden]="!users">
+    <input matInput #filter (keyup)="loadData(filter.value)"
+        placeholder="Filter by name (or part of it)...">
+</mat-form-field>
+
+<table mat-table [dataSource]="users"
+    class="mat-elevation-z8"
+    [hidden]="!users"
+    matSort (matSortChange)="loadData()"
+    [matSortActive]="defaultSortColumn"
+    [matSortDirection]="defaultSortOrder">
+
+<!-- Id Column -->
+<ng-container matColumnDef="id">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+    <td mat-cell *matCellDef="let user"> {{user.id}} </td>
+</ng-container>
+
+<!-- Name Column -->
+<ng-container matColumnDef="name">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+    <td mat-cell *matCellDef="let user"> 
+        <a [routerLink]="['/user', user.id]">{{user.name}}</a>
+    </td>
+</ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+</table>
+
+<!-- Pagination directive -->
+<mat-paginator [hidden]="!users"
+    (page)="getData($event)"
+    [pageSize]="10"
+    [pageSizeOptions]="[10, 20, 50]"
+    showFirstLastButtons>
+</mat-paginator>

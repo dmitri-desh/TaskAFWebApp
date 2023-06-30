@@ -10,13 +10,12 @@ namespace WebApi.Data
 
             if (!context.Set<Role>().Any() && !context.Set<User>().Any())
             {
-                var emptyUsers = new List<User>();
                 //roles
-                var superAdmin = new Role { Name = "Super Admin", Users = emptyUsers };
-                var admin = new Role { Name = "Admin", Users = emptyUsers };
-                var manager = new Role { Name = "Manager", Users = emptyUsers };
-                var moderator = new Role { Name = "Moderator", Users = emptyUsers };
-                var customer = new Role { Name = "Customer", Users = emptyUsers };
+                var superAdmin = new Role { Name = "Super Admin" };
+                var admin = new Role { Name = "Admin" };
+                var manager = new Role { Name = "Manager" };
+                var moderator = new Role { Name = "Moderator" };
+                var customer = new Role { Name = "Customer" };
 
                 var roles = new List<Role>()
                 {
@@ -40,6 +39,7 @@ namespace WebApi.Data
                     new User{ Name = "User 06", Roles = new List<Role> { manager, customer } },
                     new User{ Name = "User 07", Roles = new List<Role> { moderator, customer } },
                     new User{ Name = "User 08", Roles = new List<Role> { admin, customer } },
+                    new User{ Name = "User 09" }
                 };
 
                 await context.Set<User>().AddRangeAsync(users);

@@ -17,6 +17,6 @@ namespace WebApi.Data.Models
         public required string Name { get; set; }
 
         [ForeignKey("UserId")]
-        public required virtual ICollection<Role> Roles { get; set; }
+        public ICollection<Role>? Roles { get; set; }
     }
 }
