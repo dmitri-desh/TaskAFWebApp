@@ -6,11 +6,31 @@
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
+        <p>
+            <mat-error *ngIf="form.invalid && form.hasError('isDupeUser')">
+                <strong>ERROR</strong>:
+                A user with the same <i>name</i> already exists.
+            </mat-error>
+        </p>
+
         <!-- Name -->
         <mat-form-field>
             <mat-label>Name:</mat-label>
             <input matInput formControlName="name" required
                 placeholder="Type a name">
+            <mat-error *ngIf="this.form.controls['name'].errors?.['required']">
+                Name is required.
+            </mat-error>
+        </mat-form-field>
+
+        <!-- Roles -->
+        <mat-form-field *ngIf="roles">
+            <mat-label>Select a Role...</mat-label>
+            <mat-select id="roleId" formControlName="roleId" multiple="true">
+                <mat-option *ngFor="let role of roles" [value]="role.id">
+                    {{role.name}}
+                </mat-option>
+            </mat-select>
         </mat-form-field>
         
         <div>

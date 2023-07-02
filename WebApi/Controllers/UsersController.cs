@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Core;
+using Humanizer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +36,7 @@ namespace WebApi.Controllers
             string? filterQuery = null)
         {
             return await ApiResult<User>.CreateAsync(
-                _context.Users.AsNoTracking(),
+                source: _context.Users.AsNoTracking(),
                 pageIndex,
                 pageSize,
                 sortColumn,
@@ -129,6 +132,13 @@ namespace WebApi.Controllers
         private bool UserExists(int id)
         {
             return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        [HttpPost]
+        [Route("IsDupeUser")]
+        public bool IsDupeUser(User user)
+        {
+            return _context.Users.Any(e => e.Name == user.Name && e.Id != user.Id );
         }
     }
 }

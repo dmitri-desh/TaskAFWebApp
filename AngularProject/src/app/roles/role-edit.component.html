@@ -2,22 +2,27 @@
 
     <h1>{{title}}</h1>
 
-    <p *ngIf="!role"><em>Loading…</em></p>
+    <p *ngIf="this.id && !role"><em>Loading…</em></p>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
         <!-- Name -->
         <mat-form-field>
             <mat-label>Name:</mat-label>
-            <input matInput formControlName="name" required
-                placeholder="Type a name">
+            <input matInput formControlName="name" required placeholder="Type a name">
+                <mat-error *ngIf="this.form.controls['name'].errors?.['required']">
+                    Name is required.
+                </mat-error>
+                <mat-error *ngIf="this.form.controls['name'].errors?.['isDupeField']">
+                    Name already exists: please choose another.
+                </mat-error>
         </mat-form-field>
         
         <div>
             <button mat-flat-button color="primary" type="submit">
-                Save
+                {{ this.id ? "Save" : "Create" }}
             </button>
-            <button mat-flat-button color="secondary" [routerLink]="['/cities']">
+            <button mat-flat-button color="secondary" [routerLink]="['/roles']">
                 Cancel
             </button>
         </div>

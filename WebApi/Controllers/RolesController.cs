@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -32,19 +34,14 @@ namespace WebApi.Controllers
             string? filterQuery = null)
         {
 
-            if (_context.Roles == null)
-            {
-                return NotFound();
-            }
-
-            var roles = _context.Roles.AsNoTracking();
-
-            if (!string.IsNullOrEmpty(filterColumn) && !string.IsNullOrEmpty(filterQuery))
-            {
-                roles = roles.Where(c => c.Name.StartsWith(filterQuery));
-            }
-
-            return await ApiResult<Role>.CreateAsync(roles, pageIndex, pageSize, sortColumn, sortOrder, filterColumn, filterQuery);
+            return await ApiResult<Role>.CreateAsync(
+                 source: _context.Roles.AsNoTracking(),
+                 pageIndex,
+                 pageSize,
+                 sortColumn,
+                 sortOrder,
+                 filterColumn,
+                 filterQuery);
         }
 
         // GET: api/Roles/5
@@ -134,6 +131,15 @@ namespace WebApi.Controllers
         private bool RoleExists(int id)
         {
             return (_context.Roles?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        [HttpPost]
+        [Route("IsDupeField")]
+        public bool IsDupeField(int roleId, string fieldName, string fieldValue)
+        {
+            return ApiResult<Role>.IsValidProperty(fieldName, true)
+                ? _context.Roles.Any(string.Format("{0} == @0 && Id != @1", fieldName), fieldValue, roleId)
+                : false;
         }
     }
 }
