@@ -9,6 +9,8 @@ using Humanizer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using NuGet.Packaging;
 using WebApi.Data;
 using WebApi.Data.Models;
 
@@ -53,7 +55,9 @@ namespace WebApi.Controllers
           {
               return NotFound();
           }
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users
+                .Include(r => r.Roles)
+                .FirstOrDefaultAsync(user => user.Id == id);
 
             if (user == null)
             {
@@ -73,7 +77,33 @@ namespace WebApi.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(user).State = EntityState.Modified;
+            if (!UserExists(id))
+            {
+                return NotFound();
+            }
+
+            var userToUpdate = await _context.Users
+                .Include(r => r.Roles)
+                .FirstOrDefaultAsync(user => user.Id == id);
+
+            if (userToUpdate != null)
+            {
+                _context.Entry(userToUpdate).CurrentValues.SetValues(user);
+                _context.Entry(userToUpdate).State = EntityState.Modified;
+
+                //Delete existing roles
+                userToUpdate.Roles.Clear();
+
+                //Add roles to updating User
+                foreach (var role in user.Roles)
+                {
+                    var roleToAdd = await _context.Roles.FirstOrDefaultAsync(r => r.Id == role.Id);
+                    if (roleToAdd != null)
+                    {
+                        userToUpdate.Roles.Add(roleToAdd);
+                    }
+                }
+            }
 
             try
             {
@@ -99,12 +129,37 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)
         {
-          if (_context.Users == null)
-          {
-              return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
-          }
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            if (_context.Users == null)
+            {
+                return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
+            }
+
+            if (user != null) 
+            {
+                var roles = new List<Role>();
+                if (user.Roles != null)
+                {
+                    foreach(var role in user.Roles)
+                    {
+                        var roleToAdd = await _context.Roles.FirstOrDefaultAsync(r => r.Id == role.Id);
+                        if (roleToAdd != null)
+                        {
+                            roles.Add(roleToAdd);
+                        }
+                    }
+
+                    user.Roles.Clear();
+                    user.Roles.AddRange(roles);
+                }
+
+                _context.Users.Add(user);
+
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                return BadRequest();
+            }
 
             return CreatedAtAction("GetUser", new { id = user.Id }, user);
         }
@@ -117,12 +172,18 @@ namespace WebApi.Controllers
             {
                 return NotFound();
             }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
                 return NotFound();
             }
 
+            if (user.Roles != null)
+            {
+                user.Roles.Clear();
+            }
+            
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 

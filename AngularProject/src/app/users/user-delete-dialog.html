@@ -1,0 +1,9 @@
+<h1 mat-dialog-title>Delete User</h1>
+
+<div mat-dialog-content>
+  Would you like to delete {{ data.name }}?
+</div>
+<div mat-dialog-actions>
+  <button mat-raised-button mat-dialog-close (click)="goBack()">No</button>
+  <button mat-raised-button mat-dialog-close cdkFocusInitial (click)="delete(data.id)">Ok</button>
+</div>

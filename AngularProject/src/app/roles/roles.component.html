@@ -6,11 +6,11 @@
 
 <button mat-flat-button color="primary"
     class="btn-add" *ngIf="roles" [routerLink]="['/role']">
-        Add a new User
+        Add a new Role
 </button>
 
 <mat-form-field [hidden]="!roles">
-    <input matInput #filter (keyup)="loadData(filter.value)"
+    <input matInput #filter (keyup)="onFilterTextChanged(filter.value)"
         placeholder="Filter by name (or part of it)...">
 </mat-form-field>
 

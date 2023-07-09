@@ -44,8 +44,7 @@ roles?: Role[];
   ngOnInit() {
     this.form = new FormGroup({
       name: new FormControl('', Validators.required),
-      // TODO update to multi-select
-      roleId: new FormControl('')
+      userRoles: new FormControl('')
     }, null, this.isDupeUser());
 
     this.loadData();
@@ -54,11 +53,11 @@ roles?: Role[];
   isDupeUser(): AsyncValidatorFn {
     return (control: AbstractControl): Observable<{ [key: string]: any } | null> => {
 
-      var user = <User>{};
+      const user = <User>{};
       user.id = (this.id) ? this.id : 0;
       user.name = this.form.controls['name'].value;
 
-      var url = environment.baseUrl + 'api/Users/IsDupeUser';
+      const url = `${environment.baseUrl}api/Users/IsDupeUser`;
 
       return this.http.post<boolean>(url, user).pipe(map(result => {
         return (result ? { isDupeUser: true } : null);
@@ -72,20 +71,22 @@ roles?: Role[];
     this.loadRoles();
 
     // retrieve the ID from the 'id' parameter
-    var idParam = this.activatedRoute.snapshot.paramMap.get('id');
+    const idParam = this.activatedRoute.snapshot.paramMap.get('id');
     this.id = idParam ? +idParam : 0;
 
     if (this.id) {
       // EDIT MODE
 
       // fetch the user from the server
-      var url = environment.baseUrl + 'api/Users/' + this.id;
+      const url = `${environment.baseUrl}api/Users/${this.id}`;
       this.http.get<User>(url).subscribe(result => {
         this.user = result;
         this.title = "Edit - " + this.user.name;
-
-      // update the form with the user value
-      this.form.patchValue(this.user);
+        const selectedOptions = result.roles?.map(role => role.id);
+      
+        // update the form with the user value
+        this.form.patchValue(this.user);
+        this.form.patchValue({ userRoles: selectedOptions });
       },
       error => console.error(error));
     }
@@ -97,8 +98,8 @@ roles?: Role[];
 
   loadRoles() {
     // fetch all the roles from the server
-    var url = environment.baseUrl + 'api/Roles';
-    var params = new HttpParams()
+    const url = `${environment.baseUrl}api/Roles`;
+    const params = new HttpParams()
       .set("pageIndex", "0")
       .set("pageSize", "9999")
       .set("sortColumn", "name");
@@ -109,21 +110,33 @@ roles?: Role[];
   }
 
   onSubmit() {
-    var user = (this.id) ? this.user : <User>{};
+    const user = (this.id) ? this.user : <User>{};
 
     if (user) {
-      user.name = this.form.controls['name'].value;
-      // TODO get roles array values
-      user.roleId = +this.form.controls['roleId'].value;
+      user.name = this.form.value.name;
+      
+      if (this.form.value.userRoles) {
+        const rolesToUpdate: Role[] = this.form.value.userRoles
+        .map((id: any) => {
+          return {
+            id,
+            name: `Role Name with Id = ${id}`,
+          }
+        });
+      
+      user.roles = rolesToUpdate;
+      }
+      
 
       if (this.id) {
         // EDIT mode
 
-        var url = environment.baseUrl + 'api/Users/' + user.id;
+        const url = `${environment.baseUrl}api/Users/${user.id}`;
+       
         this.http.put<User>(url, user).subscribe(result => {
-            console.log("User " + user!.id + " has been updated.");
+            console.log(`User ${user!.id} has been updated.`);
 
-            // go back to cities view
+            // go back to users view
             this.router.navigate(['/users']);
         }, 
         error => console.error(error));
@@ -131,9 +144,10 @@ roles?: Role[];
       else {
         // ADD NEW mode
 
-        var url = environment.baseUrl + 'api/Users';
+        const url = `${environment.baseUrl}api/Users`;
+
         this.http.post<User>(url, user).subscribe(result => {
-          console.log("User " + result.id + " has been created.");
+          console.log(`User ${result.id} has been created.`);
 
           // go back to users view
           this.router.navigate(['/users']);

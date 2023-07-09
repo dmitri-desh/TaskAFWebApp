@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using WebApi.Data;
 
 namespace WebApi
@@ -11,7 +12,11 @@ namespace WebApi
 
             // Add services to the container.
             builder.Services.AddControllers().AddJsonOptions(options =>
-                options.JsonSerializerOptions.WriteIndented = true
+            {
+                options.JsonSerializerOptions.WriteIndented = true;
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            }
+                
             );
 
             builder.Services.AddCors(options =>

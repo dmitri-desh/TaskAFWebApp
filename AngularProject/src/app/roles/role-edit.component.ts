@@ -53,10 +53,8 @@ roles?: Role[];
 
     // retrieve the ID from the 'id' parameter
     var idParam = this.activatedRoute.snapshot.paramMap.get('id');
-
-    
     this.id = idParam ? +idParam : 0;
-    console.log(this.id, idParam);
+    
     if (this.id) {
       // EDIT MODE
 
