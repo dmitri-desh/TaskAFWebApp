@@ -1,18 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Drawing;
-using System.Linq;
-using System.Threading.Tasks;
-using Azure.Core;
-using Humanizer;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations.Operations;
-using NuGet.Packaging;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApi.Data;
 using WebApi.Data.Models;
+using WebApi.Services.Interfaces;
 
 namespace WebApi.Controllers
 {
@@ -20,16 +9,16 @@ namespace WebApi.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IUserService _userService;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(IUserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
 
-        // GET: api/Users
+        // GET: api/Users?pageIndex=0&pageSize=10&sortColumn=name&sortOrder=asc
         [HttpGet]
-        public async Task<ActionResult<ApiResult<User>>> GetUsers(
+        public async Task<ActionResult<ApiResult<User>>?> GetUsers(
             int pageIndex = 0,
             int pageSize = 10,
             string? sortColumn = null,
@@ -37,8 +26,10 @@ namespace WebApi.Controllers
             string? filterColumn = null,
             string? filterQuery = null)
         {
+            var source = await _userService.GetUsersAsync();
+
             return await ApiResult<User>.CreateAsync(
-                source: _context.Users.AsNoTracking(),
+                source,
                 pageIndex,
                 pageSize,
                 sortColumn,
@@ -49,15 +40,14 @@ namespace WebApi.Controllers
 
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<ActionResult<User>?> GetUser(int id)
         {
-          if (_context.Users == null)
-          {
+            if (_userService == null)
+            {
               return NotFound();
-          }
-            var user = await _context.Users
-                .Include(r => r.Roles)
-                .FirstOrDefaultAsync(user => user.Id == id);
+            }
+           
+            var user = await _userService.GetUserAsync(id);
 
             if (user == null)
             {
@@ -77,49 +67,12 @@ namespace WebApi.Controllers
                 return BadRequest();
             }
 
-            if (!UserExists(id))
+            if (!_userService.UserExists(id))
             {
                 return NotFound();
             }
 
-            var userToUpdate = await _context.Users
-                .Include(r => r.Roles)
-                .FirstOrDefaultAsync(user => user.Id == id);
-
-            if (userToUpdate != null)
-            {
-                _context.Entry(userToUpdate).CurrentValues.SetValues(user);
-                _context.Entry(userToUpdate).State = EntityState.Modified;
-
-                //Delete existing roles
-                userToUpdate.Roles.Clear();
-
-                //Add roles to updating User
-                foreach (var role in user.Roles)
-                {
-                    var roleToAdd = await _context.Roles.FirstOrDefaultAsync(r => r.Id == role.Id);
-                    if (roleToAdd != null)
-                    {
-                        userToUpdate.Roles.Add(roleToAdd);
-                    }
-                }
-            }
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            await _userService.UpdateUserAsync(id, user);
 
             return NoContent();
         }
@@ -129,32 +82,9 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)
         {
-            if (_context.Users == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
-            }
-
             if (user != null) 
             {
-                var roles = new List<Role>();
-                if (user.Roles != null)
-                {
-                    foreach(var role in user.Roles)
-                    {
-                        var roleToAdd = await _context.Roles.FirstOrDefaultAsync(r => r.Id == role.Id);
-                        if (roleToAdd != null)
-                        {
-                            roles.Add(roleToAdd);
-                        }
-                    }
-
-                    user.Roles.Clear();
-                    user.Roles.AddRange(roles);
-                }
-
-                _context.Users.Add(user);
-
-                await _context.SaveChangesAsync();
+                await _userService.CreateUserAsync(user);
             }
             else
             {
@@ -168,38 +98,16 @@ namespace WebApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            if (_context.Users == null)
-            {
-                return NotFound();
-            }
-
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            if (user.Roles != null)
-            {
-                user.Roles.Clear();
-            }
-            
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+            await _userService.DeleteUserAsync(id);
 
             return NoContent();
-        }
-
-        private bool UserExists(int id)
-        {
-            return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         [HttpPost]
         [Route("IsDupeUser")]
         public bool IsDupeUser(User user)
         {
-            return _context.Users.Any(e => e.Name == user.Name && e.Id != user.Id );
+            return _userService.IsDupeUser(user);
         }
     }
 }

@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { environment } from './../../environments/environment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
@@ -111,7 +111,6 @@ export interface DialogData {
 
 export class UserDeleteDialog {
   constructor(
-    private activatedRoute: ActivatedRoute,
     private router: Router,
     private http: HttpClient,
     @Inject(MAT_DIALOG_DATA) public data: DialogData

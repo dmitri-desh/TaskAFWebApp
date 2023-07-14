@@ -1,9 +1,11 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from './../../environments/environment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
+import { MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -17,7 +19,7 @@ import { Role } from './role';
 })
 
 export class RolesComponent implements OnInit {
-  public displayedColumns: string[] = ['id', 'name'];
+  public displayedColumns: string[] = ['id', 'name', 'actions'];
   public roles!: MatTableDataSource<Role>;
 
   defaultPageIndex: number = 0;
@@ -34,7 +36,13 @@ export class RolesComponent implements OnInit {
 
   filterTextChanged: Subject<string> = new Subject<string>();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    public dialog: MatDialog) {
+  }
+
+  openDialog(id: number, name: string) {
+    this.dialog.open(RoleDeleteDialog, { data: { id, name }, width: '350px' });
   }
 
   ngOnInit() {
@@ -88,5 +96,39 @@ export class RolesComponent implements OnInit {
         this.roles = new MatTableDataSource<Role>(result.data);
       }, 
       error => console.error(error));
+  }
+}
+
+export interface DialogData {
+  id: number;
+  name: string;
+}
+
+@Component({
+  selector: 'role-delete-dialog',
+  templateUrl: 'role-delete-dialog.html'
+})
+
+export class RoleDeleteDialog {
+  constructor(
+    private router: Router,
+    private http: HttpClient,
+    @Inject(MAT_DIALOG_DATA) public data: DialogData
+  ) {}
+
+  delete(id: number) {
+    const url = `${environment.baseUrl}api/Roles/${id}`;
+
+    this.http.delete<Role>(url).subscribe(result => {
+      console.log(`Role ${id} has been deleted.`);
+
+      // go back to roles view
+      this.goBack();
+    }, error => console.error(error));
+  }
+
+  goBack() {
+      // go back to roles view
+      this.router.navigate(['/roles']);
   }
 }

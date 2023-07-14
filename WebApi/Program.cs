@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using WebApi.Data;
+using WebApi.Services.Implementations;
+using WebApi.Services.Interfaces;
 
 namespace WebApi
 {
@@ -37,8 +40,12 @@ namespace WebApi
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddAutoMapper(typeof(Program));
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IRoleService, RoleService>();
 
             CreateDbIfNotExists(builder);
+            SetMigrations(builder);
 
             var app = builder.Build();
 
@@ -75,6 +82,24 @@ namespace WebApi
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
                 logger.LogError(ex, "An error occurred creating the DB.");
+            }
+        }
+
+        private static void SetMigrations(WebApplicationBuilder builder)
+        {
+            using var scope = builder.Services.BuildServiceProvider().CreateScope();
+
+            var services = scope.ServiceProvider;
+
+            try
+            {
+                var context = services.GetRequiredService<ApplicationDbContext>();
+                context.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "An error occurred setting migrations.");
             }
         }
     }
