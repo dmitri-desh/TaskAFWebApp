@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using WebApi.Data;
 using WebApi.Data.Models;
 using WebApi.Services.Interfaces;
+using WebApi.DTO;
 
 namespace WebApi.Controllers
 {
@@ -10,15 +12,17 @@ namespace WebApi.Controllers
     public class RolesController : ControllerBase
     {
         private readonly IRoleService _roleService;
+        private readonly IMapper _mapper;
 
-        public RolesController(IRoleService roleService)
+        public RolesController(IRoleService roleService, IMapper mapper)
         {
             _roleService = roleService;
+            _mapper = mapper;
         }
 
         // GET: api/Roles?pageIndex=0&pageSize=10&sortColumn=name&sortOrder=asc
         [HttpGet]
-        public async Task<ActionResult<ApiResult<Role>>?> GetRoles(
+        public async Task<ActionResult<ApiResult<RoleDto>>?> GetRoles(
             int pageIndex = 0, 
             int pageSize = 10, 
             string? sortColumn = null,
@@ -26,9 +30,10 @@ namespace WebApi.Controllers
             string? filterColumn = null,
             string? filterQuery = null)
         {
-            var source = await _roleService.GetRolesAsync();
+            var roles = await _roleService.GetRolesAsync();
+            var source = _mapper.ProjectTo<RoleDto>(roles);
 
-            return await ApiResult<Role>.CreateAsync(
+            return await ApiResult<RoleDto>.CreateAsync(
                  source,
                  pageIndex,
                  pageSize,
@@ -40,7 +45,7 @@ namespace WebApi.Controllers
 
         // GET: api/Roles/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Role>> GetRole(int id)
+        public async Task<ActionResult<RoleDto>> GetRole(int id)
         {
           if (_roleService == null)
           {
@@ -53,15 +58,17 @@ namespace WebApi.Controllers
                 return NotFound();
             }
 
-            return role;
+            var roleDto = _mapper.Map<RoleDto>(role);
+
+            return roleDto;
         }
 
         // PUT: api/Roles/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(int id, Role role)
+        public async Task<IActionResult> PutRole(int id, RoleDto roleDto)
         {
-            if (id != role.Id)
+            if (id != roleDto.Id)
             {
                 return BadRequest();
             }
@@ -71,6 +78,7 @@ namespace WebApi.Controllers
                 return NotFound();
             }
 
+            var role = _mapper.Map<Role>(roleDto);
             await _roleService.UpdateRoleAsync(id, role);
 
             return NoContent();
@@ -79,10 +87,13 @@ namespace WebApi.Controllers
         // POST: api/Roles
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Role>> PostRole(Role role)
+        public async Task<ActionResult<RoleDto>> PostRole(RoleDto roleDto)
         {
-            if (role != null)
+            Role role;
+
+            if (roleDto != null)
             {
+                role = _mapper.Map<Role>(roleDto);
                 await _roleService.CreateRoleAsync(role);
             }
             else
@@ -90,7 +101,9 @@ namespace WebApi.Controllers
                 return BadRequest();
             }
 
-            return CreatedAtAction("GetRole", new { id = role.Id }, role);
+            roleDto = _mapper.Map<RoleDto>(role);
+
+            return CreatedAtAction("GetRole", new { id = roleDto.Id }, roleDto);
         }
 
         // DELETE: api/Roles/5
@@ -106,7 +119,7 @@ namespace WebApi.Controllers
         [Route("IsDupeField")]
         public bool IsDupeField(int roleId, string fieldName, string fieldValue)
         {
-            return ApiResult<Role>.IsValidProperty(fieldName, true)
+            return ApiResult<RoleDto>.IsValidProperty(fieldName, true)
                 && _roleService.IsDupeRole(fieldName, fieldValue, roleId);
         }
     }

@@ -86,7 +86,7 @@ namespace WebApi.Services.Implementations
 
         public Task<IQueryable<User>?> GetUsersAsync()
         {
-            return Task.FromResult<IQueryable<User>?>(_context.Users);
+            return Task.FromResult<IQueryable<User>?>(_context.Users?.Include(r => r.Roles));
         }
 
         public async Task<bool?> UpdateUserAsync(int id, User user)

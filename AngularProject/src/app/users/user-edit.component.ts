@@ -117,7 +117,7 @@ roles?: Role[];
       
       if (this.form.value.userRoles) {
         const rolesToUpdate: Role[] = this.form.value.userRoles
-        .map((id: any) => {
+        .map((id: number) => {
           return {
             id,
             name: `Role Name with Id = ${id}`,

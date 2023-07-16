@@ -19,7 +19,7 @@ import { User } from './user';
 })
 
 export class UsersComponent implements OnInit {
-  public displayedColumns: string[] = ['id', 'name', 'actions'];
+  public displayedColumns: string[] = ['id-col', 'name-col', 'roles-col', 'actions-col'];
   public users!: MatTableDataSource<User>;
 
   defaultPageIndex: number = 0;
@@ -63,9 +63,7 @@ export class UsersComponent implements OnInit {
     const pageEvent = new PageEvent();
     pageEvent.pageIndex = this.defaultPageIndex;
     pageEvent.pageSize = this.defaultPageSize;
-
     this.filterQuery = query;
-
     this.getData(pageEvent);
   }
 
@@ -93,7 +91,16 @@ export class UsersComponent implements OnInit {
         this.paginator.length = result.totalCount;
         this.paginator.pageIndex = result.pageIndex;
         this.paginator.pageSize = result.pageSize;
-        this.users = new MatTableDataSource<User>(result.data);
+        const usersList = result.data.map((item: User) => {
+          return {
+            id: item.id,
+            name: item.name,
+            roles: item.roles,
+            rolesList: item.roles?.map(role => role.name).join(', ')
+          }   
+        });
+        this.users = new MatTableDataSource<User>(usersList);
+        
       }, 
       error => console.error(error));
   }
