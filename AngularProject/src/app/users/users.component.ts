@@ -1,7 +1,5 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { environment } from './../../environments/environment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
@@ -11,6 +9,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { User } from './user';
+import { UserService } from './user.service';
 
 @Component({
   selector: 'app-users',
@@ -19,7 +18,7 @@ import { User } from './user';
 })
 
 export class UsersComponent implements OnInit {
-  public displayedColumns: string[] = ['id-col', 'name-col', 'roles-col', 'actions-col'];
+  public displayedColumns: string[] = ['id', 'name', 'rolesList', 'actions'];
   public users!: MatTableDataSource<User>;
 
   defaultPageIndex: number = 0;
@@ -37,7 +36,7 @@ export class UsersComponent implements OnInit {
   filterTextChanged: Subject<string> = new Subject<string>();
 
   constructor(
-    private http: HttpClient,
+    private userService: UserService,
     public dialog: MatDialog) {
   }
 
@@ -68,25 +67,30 @@ export class UsersComponent implements OnInit {
   }
 
   getData(event: PageEvent) {
-    const url = `${environment.baseUrl}api/Users`;
 
-    let params = new HttpParams()
-      .set("pageIndex", event.pageIndex.toString())
-      .set("pageSize", event.pageSize.toString())
-      .set("sortColumn", (this.sort)
+    const sortColumn = (this.sort)
       ? this.sort.active
-      : this.defaultSortColumn)
-        .set("sortOrder", (this.sort)
+      : this.defaultSortColumn;
+
+    const sortOrder = (this.sort)
       ? this.sort.direction
-      : this.defaultSortOrder);
+      : this.defaultSortOrder;
+    
+    const filterColumn = (this.filterQuery)
+      ? this.defaultFilterColumn
+      : null;
 
-    if (this.filterQuery) {
-      params = params
-      .set("filterColumn", this.defaultFilterColumn)
-      .set("filterQuery", this.filterQuery);
-    }
+    const filterQuery = (this.filterQuery)
+      ? this.filterQuery
+      : null;
 
-    this.http.get<any>(url, { params })
+    this.userService.getData(
+      event.pageIndex,
+      event.pageSize,
+      sortColumn,
+      sortOrder,
+      filterColumn,
+      filterQuery)
       .subscribe(result => {
         this.paginator.length = result.totalCount;
         this.paginator.pageIndex = result.pageIndex;
@@ -95,8 +99,8 @@ export class UsersComponent implements OnInit {
           return {
             id: item.id,
             name: item.name,
-            roles: item.roles,
-            rolesList: item.roles?.map(role => role.name).join(', ')
+            rolesList: item.roles?.map(role => role.name).join(', '),
+            roles: item.roles
           }   
         });
         this.users = new MatTableDataSource<User>(usersList);
@@ -113,20 +117,19 @@ export interface DialogData {
 
 @Component({
   selector: 'user-delete-dialog',
-  templateUrl: 'user-delete-dialog.html'
+  templateUrl: 'user-delete-dialog.html',
+  styleUrls: ['./user-delete-dialog.scss']
 })
 
 export class UserDeleteDialog {
   constructor(
     private router: Router,
-    private http: HttpClient,
+    private userService: UserService,
     @Inject(MAT_DIALOG_DATA) public data: DialogData
   ) {}
 
   delete(id: number) {
-    const url = `${environment.baseUrl}api/Users/${id}`;
-
-    this.http.delete<User>(url).subscribe(result => {
+      this.userService.delete(id).subscribe(result => {
       console.log(`User ${id} has been deleted.`);
 
       // go back to users view

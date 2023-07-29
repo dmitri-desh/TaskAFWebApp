@@ -52,7 +52,7 @@ namespace WebApi.Services.Implementations
 
         public Task<IQueryable<Role>?> GetRolesAsync()
         {
-            return Task.FromResult<IQueryable<Role>?>(_context.Roles);
+            return Task.FromResult<IQueryable<Role>?>(_context.Roles.Include(u => u.Users));
         }
 
         public bool IsDupeRole(string fieldName, string fieldValue, int roleId)

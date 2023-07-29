@@ -1,14 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormGroup, FormControl, Validators, AbstractControl, AsyncValidatorFn } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { environment } from './../../environments/environment';
-
 import { User } from './user';
 import { Role } from '../roles/role';
+import { BaseFormComponent } from '../base-form.component';
+import { UserService } from './user.service';
 
 @Component({
   selector: 'app-user-edit',
@@ -16,13 +15,11 @@ import { Role } from '../roles/role';
   styleUrls: ['./user-edit.component.scss']
 })
 
-export class UserEditComponent implements OnInit {
+export class UserEditComponent
+  extends BaseFormComponent implements OnInit {
 
   // the view title
   title?: string;
-
-  // the form model
-  form!: FormGroup;
 
   // the user object to edit or create
   user?: User;
@@ -38,7 +35,8 @@ roles?: Role[];
   constructor(
     private activatedRoute: ActivatedRoute,
     private router: Router,
-    private http: HttpClient) {
+    private userService: UserService) {
+      super();
     }
 
   ngOnInit() {
@@ -57,9 +55,7 @@ roles?: Role[];
       user.id = (this.id) ? this.id : 0;
       user.name = this.form.controls['name'].value;
 
-      const url = `${environment.baseUrl}api/Users/IsDupeUser`;
-
-      return this.http.post<boolean>(url, user).pipe(map(result => {
+      return this.userService.isDupeUser(user).pipe(map(result => {
         return (result ? { isDupeUser: true } : null);
       }));
     }
@@ -78,8 +74,7 @@ roles?: Role[];
       // EDIT MODE
 
       // fetch the user from the server
-      const url = `${environment.baseUrl}api/Users/${this.id}`;
-      this.http.get<User>(url).subscribe(result => {
+      this.userService.get(this.id).subscribe(result => {
         this.user = result;
         this.title = "Edit - " + this.user.name;
         const selectedOptions = result.roles?.map(role => role.id);
@@ -98,12 +93,14 @@ roles?: Role[];
 
   loadRoles() {
     // fetch all the roles from the server
-    const url = `${environment.baseUrl}api/Roles`;
-    const params = new HttpParams()
-      .set("pageIndex", "0")
-      .set("pageSize", "9999")
-      .set("sortColumn", "name");
-    this.http.get<any>(url, { params }).subscribe(result => {
+    this.userService.getRoles(
+      0,
+      9999,
+      "name",
+      "asc",
+      null,
+      null
+    ).subscribe(result => {
       this.roles = result.data;
     }, 
     error => console.error(error));
@@ -131,9 +128,7 @@ roles?: Role[];
       if (this.id) {
         // EDIT mode
 
-        const url = `${environment.baseUrl}api/Users/${user.id}`;
-       
-        this.http.put<User>(url, user).subscribe(result => {
+        this.userService.put(user).subscribe(result => {
             console.log(`User ${user!.id} has been updated.`);
 
             // go back to users view
@@ -144,9 +139,7 @@ roles?: Role[];
       else {
         // ADD NEW mode
 
-        const url = `${environment.baseUrl}api/Users`;
-
-        this.http.post<User>(url, user).subscribe(result => {
+          this.userService.post(user).subscribe(result => {
           console.log(`User ${result.id} has been created.`);
 
           // go back to users view

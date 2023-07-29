@@ -1,7 +1,5 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { environment } from './../../environments/environment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
@@ -11,6 +9,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { Role } from './role';
+import { RoleService } from './role.service';
 
 @Component({
   selector: 'app-roles',
@@ -19,7 +18,7 @@ import { Role } from './role';
 })
 
 export class RolesComponent implements OnInit {
-  public displayedColumns: string[] = ['id', 'name', 'actions'];
+  public displayedColumns: string[] = ['id', 'name', 'usersCount', 'actions'];
   public roles!: MatTableDataSource<Role>;
 
   defaultPageIndex: number = 0;
@@ -37,7 +36,7 @@ export class RolesComponent implements OnInit {
   filterTextChanged: Subject<string> = new Subject<string>();
 
   constructor(
-    private http: HttpClient,
+    private roleService: RoleService,
     public dialog: MatDialog) {
   }
 
@@ -61,7 +60,7 @@ export class RolesComponent implements OnInit {
 
 
   loadData(query?: string) {
-    var pageEvent = new PageEvent();
+    const pageEvent = new PageEvent();
     pageEvent.pageIndex = this.defaultPageIndex;
     pageEvent.pageSize = this.defaultPageSize;
     this.filterQuery = query;
@@ -69,25 +68,27 @@ export class RolesComponent implements OnInit {
   }
 
   getData(event: PageEvent) {
-    var url = environment.baseUrl + 'api/Roles';
+    const sortColumn = (this.sort)
+      ? this.sort.active
+      : this.defaultSortColumn;
+    const sortOrder = (this.sort)
+      ? this.sort.direction
+      : this.defaultSortOrder;
+    const filterColumn = (this.filterQuery)
+      ? this.defaultFilterColumn
+      : null;
+    const filterQuery = (this.filterQuery)
+      ? this.filterQuery
+      : null;
 
-    var params = new HttpParams()
-      .set("pageIndex", event.pageIndex.toString())
-      .set("pageSize", event.pageSize.toString())
-      .set("sortColumn", (this.sort)
-        ? this.sort.active
-        : this.defaultSortColumn)
-      .set("sortOrder", (this.sort)
-        ? this.sort.direction
-        : this.defaultSortOrder);
-
-    if (this.filterQuery) {
-      params = params
-      .set("filterColumn", this.defaultFilterColumn)
-      .set("filterQuery", this.filterQuery);
-    }
-
-    this.http.get<any>(url, { params })
+    this.roleService.getData(
+      event.pageIndex,
+      event.pageSize,
+      sortColumn,
+      sortOrder,
+      filterColumn,
+      filterQuery
+    )
       .subscribe(result => {
         this.paginator.length = result.totalCount;
         this.paginator.pageIndex = result.pageIndex;
@@ -111,14 +112,12 @@ export interface DialogData {
 export class RoleDeleteDialog {
   constructor(
     private router: Router,
-    private http: HttpClient,
+    private roleService: RoleService,
     @Inject(MAT_DIALOG_DATA) public data: DialogData
   ) {}
 
   delete(id: number) {
-    const url = `${environment.baseUrl}api/Roles/${id}`;
-
-    this.http.delete<Role>(url).subscribe(result => {
+    this.roleService.delete(id).subscribe(result => {
       console.log(`Role ${id} has been deleted.`);
 
       // go back to roles view

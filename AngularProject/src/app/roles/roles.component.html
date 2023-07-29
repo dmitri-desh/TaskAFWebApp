@@ -35,6 +35,14 @@
     </td>
 </ng-container>
 
+<!-- Users Count Column -->
+<ng-container matColumnDef="usersCount">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Users Count</th>
+    <td mat-cell *matCellDef="let role"> 
+        {{role.usersCount}}
+    </td>
+</ng-container>
+
 <!-- Actions Column -->
 <ng-container matColumnDef="actions">
     <th mat-header-cell *matHeaderCellDef>Actions</th>

@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormGroup, FormBuilder, Validators, AbstractControl, AsyncValidatorFn } from '@angular/forms';
+import { FormBuilder, Validators, AbstractControl, AsyncValidatorFn } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { environment } from './../../environments/environment';
-
 import { Role } from './role';
+import { BaseFormComponent } from '../base-form.component';
+import { RoleService } from './role.service';
 
 @Component({
   selector: 'app-role-edit',
@@ -15,13 +14,11 @@ import { Role } from './role';
   styleUrls: ['./role-edit.component.scss']
 })
 
-export class RoleEditComponent implements OnInit {
+export class RoleEditComponent
+  extends BaseFormComponent implements OnInit {
 
   // the view title
   title?: string;
-
-  // the form model
-  form!: FormGroup;
 
   // the role object to edit or create
   role?: Role;
@@ -38,7 +35,8 @@ roles?: Role[];
     private fb: FormBuilder,
     private activatedRoute: ActivatedRoute,
     private router: Router,
-    private http: HttpClient) {
+    private roleService: RoleService) {
+      super();
     }
 
   ngOnInit() {
@@ -52,18 +50,17 @@ roles?: Role[];
   loadData() {
 
     // retrieve the ID from the 'id' parameter
-    var idParam = this.activatedRoute.snapshot.paramMap.get('id');
+    const idParam = this.activatedRoute.snapshot.paramMap.get('id');
     this.id = idParam ? +idParam : 0;
     
     if (this.id) {
       // EDIT MODE
 
       // fetch the role from the server
-      var url = environment.baseUrl + "api/Roles/" + this.id;
-      this.http.get<Role>(url).subscribe(result => {
+      this.roleService.get(this.id).subscribe(result => {
       this.role = result;
       this.title = "Edit - " + this.role.name;
-        console.log(this.id, this.role);
+  
       // update the form with the role value
       this.form.patchValue(this.role);
       }, error => console.error(error));
@@ -75,17 +72,15 @@ roles?: Role[];
   }
 
   onSubmit() {
-    var role = (this.id) ? this.role : <Role>{};
+    const role = (this.id) ? this.role : <Role>{};
 
     if (role) {
       role.name = this.form.controls['name'].value;
       
       if (this.id) {
       // EDIT MODE
-      var url = environment.baseUrl + 'api/Roles/' + role.id;
 
-      this.http.put<Role>(url, role)
-        .subscribe(result => {
+      this.roleService.put(role).subscribe(result => {
           console.log("Role " + role!.id + " has been updated.");
 
           // go back to roles view
@@ -95,8 +90,7 @@ roles?: Role[];
       }
       else {
         // ADD NEW mode
-        var url = environment.baseUrl + 'api/Roles';
-        this.http.post<Role>(url, role).subscribe(result => {
+        this.roleService.post(role).subscribe(result => {
           console.log("Role " + result.id + " has been created.");
 
           // go back to roles view
@@ -108,13 +102,8 @@ roles?: Role[];
 
   isDupeField(fieldName: string): AsyncValidatorFn {
     return (control: AbstractControl): Observable<{[key: string]: any} | null> => {
-      var params = new HttpParams()
-        .set("roleId", (this.id) ? this.id.toString() : "0")
-        .set("fieldName", fieldName)
-        .set("fieldValue", control.value);
-      var url = environment.baseUrl + 'api/Roles/IsDupeField';
-        return this.http.post<boolean>(url, null, { params })
-        .pipe(map(result => {
+        return this.roleService.isDupeField(this.id ?? 0, fieldName, control.value)
+          .pipe(map(result => {
             return (result ? { isDupeField: true } : null);
           }));
     }
